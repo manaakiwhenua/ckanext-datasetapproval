@@ -2,8 +2,9 @@ import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
 from ckan.lib.plugins import DefaultPermissionLabels
 from ckan.authz import users_role_for_group_or_org
+from ckanext.datasetapproval import views
 
-from ckanext.datasetapproval import auth, actions, blueprints, helpers, validation
+from ckanext.datasetapproval import auth, actions, blueprints, helpers
 
 import json
 import logging as log
@@ -34,7 +35,6 @@ def editor_publishing_dataset(owner_org, user_obj):
 class DatasetapprovalPlugin(plugins.SingletonPlugin, 
         DefaultPermissionLabels, toolkit.DefaultDatasetForm):
     plugins.implements(plugins.IConfigurer)
-    plugins.implements(plugins.IValidators)
     plugins.implements(plugins.IAuthFunctions)
     plugins.implements(plugins.IActions)
     plugins.implements(plugins.IBlueprint)
@@ -59,37 +59,13 @@ class DatasetapprovalPlugin(plugins.SingletonPlugin,
             'package_create': actions.package_create,
             'package_show': actions.package_show,
             'package_update': actions.package_update,
-            'resource_create': actions.resource_create,
-            'resource_update': actions.resource_update,
         }
+        
     # IAuthFunctions
     def get_auth_functions(self):
         return {
             'package_show_with_approval': auth.package_show_with_approval
         }
-
-    #IDatasetForm
-    def create_package_schema(self):
-        schema = super(DatasetapprovalPlugin, self).create_package_schema()
-        schema.update({
-            'publishing_status': [toolkit.get_validator('publishing_status_validator'),
-                                        toolkit.get_converter('convert_to_extras')]
-        })
-        return schema
-    def update_package_schema(self):
-        schema = super(DatasetapprovalPlugin, self).update_package_schema()
-        schema.update({
-            'publishing_status': [toolkit.get_validator('publishing_status_validator'), 
-                                        toolkit.get_converter('convert_to_extras')]
-        })
-        return schema
-
-    def show_package_schema(self):
-        schema = super(DatasetapprovalPlugin, self).show_package_schema()
-        schema.update({
-            'publishing_status': [toolkit.get_converter('convert_from_extras')]
-        })
-        return schema
 
     def is_fallback(self):
         # Return True to register this plugin as the default handler for
@@ -104,26 +80,6 @@ class DatasetapprovalPlugin(plugins.SingletonPlugin,
         return {
             'is_admin': helpers.is_admin,
         }
-
-    # IValidators
-    def get_validators(self):
-        return {
-            'publishing_status_validator': validation.publishing_status_validator,
-        }
-
-    # IPackageController
-    def create(self, entity):
-        # if editor published the dataset it will be awalys private
-        if editor_publishing_dataset(entity.owner_org, toolkit.c.userobj):
-            entity.private = True
-        return entity
-
-    def edit(self, entity):
-        # if editor published the dataset it will be awalys private
-        if editor_publishing_dataset(entity.owner_org, toolkit.c.userobj):
-            entity.private = True
-        return entity
-
 
     def before_search(self, search_params):
         include_in_review = search_params.get('include_in_review', False)
@@ -166,6 +122,7 @@ class DatasetapprovalPlugin(plugins.SingletonPlugin,
 
     # IBlueprint
     def get_blueprint(self):
-        return blueprints.approveBlueprint
+        full_blueprints = [views.dataset.registered_views(), blueprints.approveBlueprint]
+        return full_blueprints
 
 

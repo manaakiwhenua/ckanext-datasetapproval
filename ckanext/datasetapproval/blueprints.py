@@ -11,10 +11,9 @@ from ckan.views.user import _extra_template_variables
 import ckan.lib.helpers as h
 from ckan.authz import users_role_for_group_or_org
 from ckan.lib.mailer import MailerException
-from ckanext.datasetapproval.mailer import mail_package_approve_reject_notification_to_editors
 from ckan.views.dataset import url_with_params
 
-log = logging.getLogger()
+log = logging.getLogger(__name__)
 
 
 approveBlueprint = Blueprint('approval', __name__,)
@@ -114,19 +113,17 @@ def _make_action(package_id, action='reject'):
         'reject': 'rejected',
         'approve': 'approved'
     }
+    # grab the old dict
+    set_private = action == 'reject'
     # check access and state
     _raise_not_authz_or_not_pending(package_id)
+    update_dict = {'id': package_id, 'publishing_status': states[action], 'currently_reviewing': True}
+    if set_private:
+        update_dict['private'] = True
     toolkit.get_action('package_patch')(
         {'model': model, 'user': toolkit.c.user},
-        {'id': package_id, 'publishing_status': states[action], 'private': False}
-    )
-    # Notify editors via email that dataset has been approved/rejected.
-    try:
-        mail_package_approve_reject_notification_to_editors(package_id, states[action])
-    except MailerException:
-        message = '[email] Failed to sent notification to the editor: {}'
-        log.critical(message.format(package_id))
-    
+        update_dict
+    ) 
     return toolkit.redirect_to(controller='dataset', action='read', id=package_id)
 
 approveBlueprint.add_url_rule('/dataset-publish/<id>/approve', view_func=approve)

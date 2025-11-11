@@ -2,69 +2,82 @@ import logging
 import ckan.authz as authz
 
 from ckan.lib.mailer import MailerException
-from ckan.plugins import toolkit
+import ckan.plugins.toolkit as tk
 import ckan.plugins as p
 import ckan.logic as logic
 
-from ckanext.datasetapproval.mailer import mail_package_review_request_to_admins
+from ckanext.datasetapproval.mailer import mail_package_review_request_to_admins, mail_package_approve_reject_notification_to_editors
 
-log = logging.getLogger()
+log = logging.getLogger(__name__)
+
+def is_user_editor_of_org(org_id, user_id):
+    capacity = authz.users_role_for_group_or_org(org_id, user_id)
+    return capacity == "editor"
+
+def publishing_check(context, data_dict):
+    admin_editing = context.get("admin_editing", False)
+    save_as_draft = context.get("save_as_draft", False)
+    user_id = (
+        tk.current_user.id
+        if tk.current_user and not tk.current_user.is_anonymous
+        else None
+    )
+    org_id = data_dict.get("owner_org")
+
+    ## if the dataset being created/updated is currently under review the status will be either "approved" or "rejected"
+    if data_dict.get("currently_reviewing"):
+        data_dict.pop("currently_reviewing")
+        ## if approved, then the visibility is set to whatever the creator (editor) of the dataset chose
+        if data_dict.get("publishing_status") == "approved":
+            data_dict["private"] = data_dict.get("chosen_visibility", "true") == "true"
+        ## if rejected, the visibility should be private
+        elif data_dict.get("publishing_status") == "rejected":
+            data_dict["private"] = "true"
+        #mail_package_approve_reject_notification_to_editors(data_dict.get("id"), data_dict.get("publishing_status"))
+    ## if the dataset is being updated by an admin then should bypass the approval state
+    elif admin_editing and data_dict.get("id"):
+        old_data_dict = tk.get_action("package_show")(
+            context, {"id": data_dict.get("id")}
+        )
+        ## if the dataset is currently in review, should remain in review and visibility should be whatever the admin has set it to
+        if old_data_dict.get("publishing_status") == "in_review":
+            data_dict["publishing_status"] = old_data_dict.get("publishing_status")
+        data_dict["chosen_visibility"] = data_dict.get("private", "true")
+    ## if the dataset is being created/updated by an editor then status must be set to "in_review" unless they are saving as a draft
+    elif is_user_editor_of_org(org_id, user_id):
+        if save_as_draft:
+            data_dict['publishing_status'] = "draft"
+        else:
+            #mail_package_review_request_to_admins(context, data_dict)
+            data_dict['publishing_status'] = "in_review"
+    return data_dict
 
 
-@p.toolkit.chained_action
+@tk.chained_action
 @logic.side_effect_free
 def package_show(up_func, context, data_dict):
-    toolkit.check_access('package_show_with_approval', context, data_dict)
+    tk.check_access('package_show_with_approval', context, data_dict)
     return up_func(context, data_dict)
 
-@p.toolkit.chained_action
+@tk.chained_action
+@logic.side_effect_free
 def package_create(up_func, context, data_dict):
-    dataset_dict = up_func(context, data_dict)
-    # Sent email to admins to review the dataset
-    if dataset_dict.get('publishing_status') == 'in_review':
-        try:
-            mail_package_review_request_to_admins(context, dataset_dict, 'new')
-        except MailerException:
-            message = '[email] Package review request is not sent: {0}'
-            log.critical(message.format(data_dict.get('title')))
-    return dataset_dict
-
-
-@p.toolkit.chained_action
-def package_update(up_func, context, data_dict):
-    dataset_dict = up_func(context, data_dict)
-    
-    # Sent email to admins to review the dataset
-    if dataset_dict.get('publishing_status') == 'in_review':
-        try:
-            mail_package_review_request_to_admins(context, dataset_dict, 'updated')
-        except MailerException:
-            message = '[email] Package review request is not sent: {0}'
-            log.critical(message.format(data_dict.get('title')))
-    return dataset_dict
-
-
-@p.toolkit.chained_action   
-def resource_create(up_func,context, data_dict):
+    publishing_check(context, data_dict)
     result = up_func(context, data_dict)
-     # little hack here, update dataset publishing status 
-    if data_dict.get('pkg_publishing_status', False):
-        toolkit.get_action('package_patch')(context, {
-            'id': data_dict.get('package_id', ''), 
-            'publishing_status': data_dict.get('pkg_publishing_status')
-            })
-        data_dict.pop('pkg_publishing_status', None)
     return result
 
 
-@p.toolkit.chained_action   
-def resource_update(up_func,context, data_dict):
+@tk.chained_action
+@logic.side_effect_free
+def package_update(up_func, context, data_dict):
+    publishing_check(context, data_dict)
     result = up_func(context, data_dict)
-    # little hack here, update dataset publishing status 
-    if data_dict.get('pkg_publishing_status', False):
-        toolkit.get_action('package_patch')(context, {
-            'id': data_dict.get('package_id', ''), 
-            'publishing_status': data_dict.get('pkg_publishing_status')
-            })
-        data_dict.pop('pkg_publishing_status', None)
+    return result
+
+
+@tk.chained_action
+@logic.side_effect_free
+def package_patch(up_func, context, data_dict):
+    publishing_check(context, data_dict)
+    result = up_func(context, data_dict)
     return result

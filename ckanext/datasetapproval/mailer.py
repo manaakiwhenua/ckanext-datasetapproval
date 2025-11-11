@@ -28,8 +28,12 @@ def mail_package_review_request_to_admins(context, data_dict, _type='new'):
         if user.email:
             subj = _compose_email_subj_for_admins(_type)
             body = _compose_email_body_for_admins(context, data_dict, user, _type)
-            mail_user(user, subj, body)
-            log.debug('[email] Dataset review request email sent to {0}'.format(user.name))
+            try:
+                mail_user(user, subj, body)
+            except Exception as e:
+                log.error(f'[email] Failed to send dataset review request email to {user.name}: {e}')
+            else:
+                log.debug('[email] Dataset review request email sent to {0}'.format(user.name))
 
 
 
@@ -39,8 +43,12 @@ def mail_package_approve_reject_notification_to_editors(package_id, publishing_s
     if editor.email:
         subj = _compose_email_subj_for_editors(publishing_status)
         body = _compose_email_body_for_editors(editor, package_dict, publishing_status )
-        mail_user(editor, subj, body)
-        log.debug('[email] Dataset approved/rejected notfication email sent to {0}'.format(editor.name))
+        try:
+            mail_user(editor, subj, body)
+        except Exception as e:
+            log.error(f'[email] Failed to send dataset approved/rejected notification email to {editor.name}: {e}')
+        else:
+            log.debug('[email] Dataset approved/rejected notification email sent to {0}'.format(editor.name))
 
 
 def _compose_email_subj_for_admins(_type):
@@ -62,7 +70,7 @@ def _get_publisher_name(context, id):
         return 'None'
 
 def _compose_email_body_for_admins(context, data_dict, user, _type):
-    pkg_link = toolkit.url_for('dataset_read', id=data_dict['name'], qualified=True)
+    pkg_link = toolkit.url_for('dataset.read', id=data_dict['name'], qualified=True)
     admin_name = user.fullname or user.name
     site_title = config.get('ckan.site_title')
     site_url = config.get('ckan.site_url')
@@ -95,7 +103,7 @@ def _compose_email_body_for_admins(context, data_dict, user, _type):
 
 
 def _compose_email_body_for_editors(user, package_dict, state):
-    pkg_link = toolkit.url_for('dataset_read', id=package_dict['name'], qualified=True)
+    pkg_link = toolkit.url_for('dataset.read', id=package_dict['name'], qualified=True)
     editor_name = user.fullname or user.name
     site_title = config.get('ckan.site_title')
     site_url = config.get('ckan.site_url')
