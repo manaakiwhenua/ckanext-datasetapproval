@@ -12,8 +12,8 @@ Note: if you're using `ckanext_scheming` extension, add new field to the schema 
           label: Publishing Status<br>
           form_snippet: null<br>
           display_snippet: null<br>
-          validators: ignore_missing publishing_status_validator<br></code>
-<code>- field_name       : chosen_visibility<br>
+          validators: ignore_missing publishing_status_validator</code>
+<code><br><br>- field_name       : chosen_visibility<br>
           label            : Visibility<br>
           form_snippet     : visibility.html<br>
           display_snippet  : null<br>
