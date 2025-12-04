@@ -5,28 +5,68 @@
 
   {% if c.pkg_dict.publishing_status  == 'in_review' %}
     <div class="alert alert-warning" role="alert">
-      <p>{% trans %}This dataset is waiting for an administrator approval.{% endtrans %}</p>
+      <p>{% trans %}This dataset is waiting for reviewer approval.{% endtrans %}</p>
       {% if h.is_admin(c.user, c.pkg_dict.owner_org) %}
       {# TODO: remove style #}
       <div style="margin-top: 10px">
         <a href="/dataset-publish/{{ c.pkg_dict.id }}/approve" class="btn btn-primary">
           {% trans %}Approve Dataset{% endtrans %}
         </a>
-        <a href="/dataset-publish/{{ c.pkg_dict.id }}/reject" class="btn btn-danger">
+        <!-- Rejection reason trigger button -->
+        <button class="btn" style="background-color:#C5432F;color:white;" data-bs-toggle="modal" data-bs-target="#rejectReasonModal">
           {% trans %}Reject Dataset{% endtrans %}
-        </a>
+        </button>
+        <!-- Rejection reasons pop-up modal -->
+          <div class="modal fade" id="rejectReasonModal" tabindex="-1" aria-labelledby="rejectReasonModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+              <div class="modal-content">
+                <div class="modal-header p-4" style="background-color: #206b82; color: white">
+                  <h4 class="modal-title">{% trans %}Rejection Reason{% endtrans %}</h4>
+                  <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                  <form action="/dataset-publish/{{ c.pkg_dict.id }}/reject" method="post">
+                    <div class="m-3">
+                      <label for="rejection_reason" class="form-label" style="color: black; font-weight: normal;">
+                        {% trans %}Please let the dataset editor know what modifications are needed for dataset publication (max 1000 characters){% endtrans %}
+                      </label>
+                      <textarea 
+                        id="rejection_reason" 
+                        name="rejection_reason" 
+                        class="form-control"
+                        style="border-radius:8px; border:1px solid #206b82;"
+                        rows="4" 
+                        maxlength="1000" 
+                        required
+                        ondrop="return false;"
+                        oninput="this.value = this.value.replace(/[^\x00-\x7F]/g, '')"
+                        placeholder="{% trans %}Explain the required modifications here...{% endtrans %}">
+                      </textarea>
+                    </div>
+                    <div class="modal-footer" style="border: none">
+                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans %}Cancel{% endtrans %}</button>
+                      <button type="submit" class="btn" style="background-color:#C5432F;color:white;">
+                        {% trans %}Send Rejection{% endtrans %}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
       {% endif %}
     </div>
   {% elif c.pkg_dict.publishing_status  == 'rejected' %}
     {% if h.is_admin(c.user, c.pkg_dict.owner_org) %}
     <div class="alert alert-danger" role="alert">
-      <p>{% trans %}Dataset was rejected.{% endtrans %}</p>
+      <p>{% trans %}Dataset was rejected. The editor of the dataset has been notified by email.{% endtrans %}</p>
     </div>
     {% endif %}
     {% if not h.is_admin(c.user, c.pkg_dict.owner_org)%}
     <div class="alert alert-danger" role="alert">
-      <p>{% trans %}Dataset was rejected by administrator.{% endtrans %}</p>
+      <p>{% trans %}Dataset was rejected by the reviewer. Please update the dataset according to the feedback you received by email and resubmit for review.{% endtrans %}</p>
     </div>
     {% endif %}
   {% endif %}
