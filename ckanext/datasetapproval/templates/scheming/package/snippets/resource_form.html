@@ -1,13 +1,21 @@
 {% ckan_extends %}
 
-{% block metadata_fields %}
-  {{ super() }}   
-  <!-- Added instruction for publishing draft dataset -->
-  {% if stage %}
-    {% if stage == 1 %}
-      <div class="alert alert-warning" role="alert">You're updating this resource as a draft. Once you done with updating, you can submit the dataset for review by visiting the dataset edit page and clicking the "Finish Update" button <a href="{{ h.url_for('dataset.edit', id=pkg_name)}}"> dataset edit page.</a> </div>
-    {% endif %}
-  {% else %}
-      <div class="alert alert-warning" role="alert">You're updating this resource as a draft. Once you done with updating, you can submit the dataset for review by visiting the dataset edit page and clicking the "Finish Update" button <a href="{{ h.url_for('dataset.edit', id=pkg_name)}}"> dataset edit page.</a> </div>
-  {% endif %}
+{% block save_button %}
+  <button class="btn {{ 'btn-primary' if h.is_admin(c.user) else 'btn-secondary' }}"
+          name="save" value="go-metadata" type="submit">
+    {% block save_button_text %}
+      {{ _('Finish') if h.is_admin(c.user) else _('Save as in progress') }}
+    {% endblock %}
+  </button>
+{% endblock %}
+
+{% block again_button %}
+  <button class="btn btn-default" name="save" value="again" type="submit">{{ _('Add another resource') }}</button>
+{% endblock %}
+
+{% block add_button %}
+  <button class="btn {{ 'btn-primary' if h.is_admin(c.user) else 'btn-secondary' }}"
+          name="save" value="go-metadata" type="submit">
+      {{ _('Add') if h.is_admin(c.user) else _('Save as in progress') }}
+  </button>
 {% endblock %}

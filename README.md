@@ -24,6 +24,10 @@ Note: if you're using `ckanext_scheming` extension, add new field to the schema 
           validators       : ignore_empty unicode_safe<br>
           default          : true<br>
 ```
+<br>
+Note: if you are using a dockerised CKAN environment add this environment variable to your .env file to turn on/off emailing(this is set to true by default)
+
+```CKANEXT__APPROVAL__TURN_ON_EMAIL_NOTIFICATIONS=false```
 
 1. Activate your CKAN virtual environment, for example:
 

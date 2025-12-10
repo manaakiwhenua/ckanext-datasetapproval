@@ -16,8 +16,7 @@ def is_user_editor_of_org(org_id, user_id):
 
 def publishing_check(context, data_dict):
     admin_editing = context.get("admin_editing", False)
-    save_as_draft = context.get("save_as_draft", False)
-    
+    submit_review = context.get("submit_review", False)
     user_id = (
         tk.current_user.id
         if tk.current_user and not tk.current_user.is_anonymous
@@ -42,11 +41,12 @@ def publishing_check(context, data_dict):
         data_dict["chosen_visibility"] = data_dict.get("private", "true")
     ## if the dataset is being created/updated by an editor then status must be set to "in_review" unless they are saving as a draft
     elif is_user_editor_of_org(org_id, user_id):
-        if save_as_draft:
-            data_dict['publishing_status'] = "draft"
-        else:
-            #mail_package_review_request_to_admins(context, data_dict)
+        if submit_review:
+            mail_package_review_request_to_admins(context, data_dict)
             data_dict['publishing_status'] = "in_review"
+        else:
+            data_dict["private"] = "true"
+            data_dict['publishing_status'] = "in_progress"
     return data_dict
 
 def set_visibility_on_approval_or_rejection(data_dict):
@@ -84,6 +84,18 @@ def package_update(up_func, context, data_dict):
 @tk.chained_action
 @logic.side_effect_free
 def package_patch(up_func, context, data_dict):
+    publishing_check(context, data_dict)
+    result = up_func(context, data_dict)
+    return result
+
+@p.toolkit.chained_action   
+def resource_create(up_func,context, data_dict):
+    publishing_check(context, data_dict)
+    result = up_func(context, data_dict)
+    return result
+
+@p.toolkit.chained_action   
+def resource_update(up_func,context, data_dict):
     publishing_check(context, data_dict)
     result = up_func(context, data_dict)
     return result

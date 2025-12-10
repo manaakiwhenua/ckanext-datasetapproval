@@ -59,6 +59,8 @@ class DatasetapprovalPlugin(plugins.SingletonPlugin,
             'package_create': actions.package_create,
             'package_show': actions.package_show,
             'package_update': actions.package_update,
+            'resource_create': actions.resource_create,
+            'resource_update': actions.resource_update,
         }
         
     # IAuthFunctions
@@ -108,8 +110,8 @@ class DatasetapprovalPlugin(plugins.SingletonPlugin,
 
     # IPermissionLabels
     def get_user_dataset_labels(self, user_obj):
-        labels = super(DatasetapprovalPlugin, self
-                       ).get_user_dataset_labels(user_obj)
+        labels = super(DatasetapprovalPlugin, self) \
+            .get_user_dataset_labels(user_obj)
 
         if user_obj and hasattr(user_obj, 'plugin_extras') and user_obj.plugin_extras:
             if user_obj.plugin_extras.get('has_approval_permission', False):
@@ -122,7 +124,7 @@ class DatasetapprovalPlugin(plugins.SingletonPlugin,
 
     # IBlueprint
     def get_blueprint(self):
-        full_blueprints = [views.dataset.registered_views(), blueprints.approveBlueprint]
+        full_blueprints = [views.dataset.registered_views(),  blueprints.approveBlueprint]
         return full_blueprints
 
 
