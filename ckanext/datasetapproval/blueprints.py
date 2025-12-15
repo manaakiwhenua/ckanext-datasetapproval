@@ -11,6 +11,7 @@ from ckan.views.user import _extra_template_variables
 import ckan.lib.helpers as h
 from ckan.authz import users_role_for_group_or_org
 from ckan.lib.mailer import MailerException
+from ckanext.datasetapproval.mailer import mail_package_approve_reject_notification_to_editors
 from ckan.views.dataset import url_with_params
 
 log = logging.getLogger(__name__)
@@ -116,16 +117,37 @@ def _make_action(package_id, action='reject', rejection_reason=None):
     }
     # grab the old dict
     set_private = action == 'reject'
-
+    context = {
+        'model': model,
+        'user': toolkit.c.user,
+        'ignore_auth': True,
+        'rejection_reason': rejection_reason
+    }
     # check access and state
     _raise_not_authz_or_not_pending(package_id)
-    updated_dict = {'id': package_id, 'publishing_status': states[action], 'currently_reviewing': True}
-    if set_private:
-        updated_dict['private'] = True
-    toolkit.get_action('package_patch')(
-        {'model': model, 'user': toolkit.c.user, 'rejection_reason': rejection_reason},
-        updated_dict
-    ) 
+    pkg = toolkit.get_action('package_show')(
+            context,
+            {'id': package_id}
+        )
+    try:
+        pkg['publishing_status'] = states[action]
+        if set_private:
+            pkg['private'] = True
+        toolkit.get_action('package_update')(
+            context,
+            pkg
+        )
+    except Exception as e:
+        log.error('Error approving dataset %s: %s', package_id, str(e))
+        h.flash_error("Unable to update publishing status of dataset. Ensure that the dataset metadata is valid via the \"Manage\" button.")
+        return h.redirect_to(u'{}.read'.format('dataset'),
+                             id=package_id)
+    try:
+        mail_package_approve_reject_notification_to_editors(package_id, pkg.get("publishing_status"), rejection_reason)
+        toolkit.h.flash_success("Review response sent to dataset creator.")
+    except MailerException as e:
+        log.error(f"Failed to send review request email: {e}")
+        toolkit.h.flash_error("Unable to send review response email to dataset creator. Please contact the datastore administrator.")
     return toolkit.redirect_to(controller='dataset', action='read', id=package_id)
 
 approveBlueprint.add_url_rule('/dataset-publish/<id>/approve', view_func=approve)
