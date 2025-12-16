@@ -5,7 +5,7 @@
 
   {% if c.pkg_dict.publishing_status  == 'in_review' %}
     <div class="alert alert-warning" role="alert">
-      <p>{% trans %}This dataset is waiting for reviewer approval.{% endtrans %}</p>
+      <p>{% trans %}This dataset is waiting for approval.{% endtrans %}</p>
       {% if h.is_admin(c.user, c.pkg_dict.owner_org) %}
       {# TODO: remove style #}
       <div style="margin-top: 10px">
@@ -40,8 +40,7 @@
                         required
                         ondrop="return false;"
                         oninput="this.value = this.value.replace(/[^\x00-\x7F]/g, '')"
-                        placeholder="{% trans %}Explain the required modifications here...{% endtrans %}">
-                      </textarea>
+                        placeholder="{% trans %}Explain the required modifications here...{% endtrans %}"></textarea>
                     </div>
                     <div class="modal-footer" style="border: none">
                       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans %}Cancel{% endtrans %}</button>
