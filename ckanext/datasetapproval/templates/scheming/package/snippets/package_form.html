@@ -16,7 +16,7 @@
 {% endblock %}
 
 {% block save_button %}
-{% asset 'datasetapproval/datasetapproval_org_js' %}
+  {% asset 'datasetapproval/datasetapproval_org_js' %}
     <!-- button that is for saving in progress - available on both create and edit -->
   {% if form_style == 'edit' %}
   {% set selected_org = pkg_dict.owner_org %}
@@ -30,11 +30,11 @@
         {% else %}
           {% set publishing_status = pkg_dict.get('publishing_status') %}
           {% if publishing_status in ['approved'] %}
-            <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#submitReview">
+            <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#submitReview" id="submitButton">
               {{ _('Submit for Review') }}
             </button>
           {% else %}
-            <button class="btn btn-primary" type="submit" name="save" value="submit-review" >{{ _('Submit for Review') }}</button>
+            <button class="btn btn-primary" type="submit" name="save" value="submit-review" id="submitButton">{{ _('Submit for Review') }}</button>
           {% endif %}
         {% endif %}   
   {% else %}
@@ -52,7 +52,7 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button class="btn btn-primary" type="submit" name="save" value="submit-review" >Submit</button>
+          <button class="btn btn-primary" type="submit" name="save" value="submit-review">Submit</button>
         </div>
       </div>
     </div>
