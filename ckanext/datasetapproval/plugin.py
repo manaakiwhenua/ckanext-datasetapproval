@@ -1,10 +1,9 @@
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
 from ckan.lib.plugins import DefaultPermissionLabels
-from ckan.authz import users_role_for_group_or_org
 from ckanext.datasetapproval import views
 
-from ckanext.datasetapproval import auth, actions, blueprints, helpers
+from ckanext.datasetapproval import actions, blueprints, helpers
 
 import json
 import logging as log
@@ -12,30 +11,9 @@ from ckan.common import _, c
 
 log = log.getLogger(__name__)
 
-import six
-from six import text_type
-def unicode_please(value):
-    if isinstance(value, six.binary_type):
-        try:
-            return six.ensure_text(value)
-        except UnicodeDecodeError:
-            return value.decode(u'cp1252')
-    return text_type(value)
-
-
-def editor_publishing_dataset(owner_org, user_obj):
-    '''
-    Check if user is editor of the organization
-    '''
-    user_capacity = users_role_for_group_or_org(owner_org, user_obj.name)
-    if user_obj.sysadmin:
-        return False
-    return user_capacity != 'admin'
-
 class DatasetapprovalPlugin(plugins.SingletonPlugin, 
         DefaultPermissionLabels, toolkit.DefaultDatasetForm):
     plugins.implements(plugins.IConfigurer)
-    plugins.implements(plugins.IAuthFunctions)
     plugins.implements(plugins.IActions)
     plugins.implements(plugins.IBlueprint)
     plugins.implements(plugins.IConfigurer)
@@ -61,14 +39,9 @@ class DatasetapprovalPlugin(plugins.SingletonPlugin,
             'package_update': actions.package_update,
             'resource_create': actions.resource_create,
             'resource_update': actions.resource_update,
+            'check_user_admin': actions.check_user_admin,
         }
         
-    # IAuthFunctions
-    def get_auth_functions(self):
-        return {
-            'package_show_with_approval': auth.package_show_with_approval
-        }
-
     def is_fallback(self):
         # Return True to register this plugin as the default handler for
         return True
@@ -81,6 +54,7 @@ class DatasetapprovalPlugin(plugins.SingletonPlugin,
     def get_helpers(self):
         return {
             'is_admin': helpers.is_admin,
+            'get_org_from_package_name': helpers.get_org_from_package_name
         }
 
     def before_search(self, search_params):
@@ -104,11 +78,11 @@ class DatasetapprovalPlugin(plugins.SingletonPlugin,
             return search_params
         else:   
             search_params.update({
-                'fq': '!(publishing_status:(draft OR in_review OR rejected))' + search_params.get('fq', '')
+                'fq': '!(publishing_status:(in_progress OR in_review OR rejected))' + search_params.get('fq', '')
             })
         return search_params
 
-    # IPermissionLabels
+    #IPermissionLabels
     def get_user_dataset_labels(self, user_obj):
         labels = super(DatasetapprovalPlugin, self) \
             .get_user_dataset_labels(user_obj)

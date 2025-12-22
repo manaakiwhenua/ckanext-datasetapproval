@@ -5,6 +5,7 @@ from ckan.lib.mailer import MailerException
 import ckan.plugins.toolkit as tk
 import ckan.plugins as p
 import ckan.logic as logic
+from ckan.lib.helpers import helper_functions as h
 
 from ckanext.datasetapproval.mailer import mail_package_review_request_to_admins 
 
@@ -34,10 +35,8 @@ def publishing_check(context, data_dict):
         old_data_dict = tk.get_action("package_show")(
             context, {"id": data_dict.get("id")}
         )
-        ## if the dataset is currently in review, should remain in review and visibility should be whatever the admin has set it to
-        if old_data_dict.get("publishing_status") == "in_review":
-            data_dict["publishing_status"] = old_data_dict.get("publishing_status")
-        data_dict["chosen_visibility"] = data_dict.get("private", "true")
+        data_dict["publishing_status"] = "approved"
+        data_dict = set_visibility_on_approval_or_rejection(data_dict)
     ## if the dataset is being created/updated by an editor then status must be set to "in_review" unless they are saving as a draft
     elif is_user_editor_of_org(org_id, user_id):
         context.update({'send_request': submit_review})
@@ -84,7 +83,6 @@ def _wrap_publish_review(up_func, context, data_dict, *, action_name):
 @tk.chained_action
 @logic.side_effect_free
 def package_show(up_func, context, data_dict):
-    tk.check_access('package_show_with_approval', context, data_dict)
     return up_func(context, data_dict)
 
 @tk.chained_action
@@ -106,3 +104,11 @@ def resource_create(up_func,context, data_dict):
 @p.toolkit.chained_action   
 def resource_update(up_func,context, data_dict):
     return _wrap_publish_review(up_func, context, data_dict, action_name="resource_update")
+
+@p.toolkit.side_effect_free
+def check_user_admin(*args):
+    user_id = tk.current_user.id
+    org_id = tk.request.args.get("org_id")
+    is_user_admin = h.is_admin(user_id, org_id)
+    log.debug("check_user_admin: user_id=%r org_id=%r is_user_admin=%r", user_id, org_id, is_user_admin)
+    return {"is_user_admin": is_user_admin}
