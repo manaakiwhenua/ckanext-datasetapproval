@@ -1,7 +1,7 @@
 [![CKAN](https://img.shields.io/badge/ckan-2.9-orange.svg?style=flat-square)](https://github.com/ckan/ckan/tree/2.9)
 
 # ckanext-datasetapproval
-An extension which provides a feature to approve or reject a dataset before making it public.
+An extension which enforces private visibility of a dataset until it has been reviewed and approved by an organisation admin.
 
 ## Installation
 To install ckanext-datasetapproval:
@@ -9,25 +9,22 @@ To install ckanext-datasetapproval:
 Note: if you're using `ckanext_scheming` extension, add new field to the schema configuration YAML file.
 
 ```
-- field_name: publishing_status
-          label: Publishing Status
-          form_snippet: null
-          display_snippet: null
-          validators: ignore_missing
+- field_name          : publishing_status
+     label            : Publishing Status
+     form_snippet     : null
+     display_snippet  : null
+     validators       : ignore_missing
 ```
 
 ```
-- field_name       : chosen_visibility
-          label            : Visibility
-          form_snippet     : visibility.html
-          display_snippet  : null
-          validators       : ignore_empty unicode_safe
-          default          : true
+- field_name          : chosen_visibility
+     label            : Visibility
+     form_snippet     : visibility.html
+     display_snippet  : null
+     validators       : ignore_empty unicode_safe
+     default          : true
 ```
 <br>
-Note: if you are using a dockerised CKAN environment add this environment variable to your .env file to turn on/off emailing(this is set to true by default)
-
-```CKANEXT__APPROVAL__TURN_ON_EMAIL_NOTIFICATIONS=false```
 
 1. Activate your CKAN virtual environment, for example:
 
@@ -43,6 +40,9 @@ Note: if you are using a dockerised CKAN environment add this environment variab
 3. Add `dataset_approval` to the `ckan.plugins` setting in your CKAN
    config file (by default the config file is located at
    `/etc/ckan/default/ckan.ini`).
+4. Add `ckanext.approval.turn_on_email_notifications` to the config file, to turn on/off review mail (this is set to `true` by default)
+     <br>*Note: if you are using a dockerised CKAN environment add this environment variable to your .env file*
+     ```CKANEXT__APPROVAL__TURN_ON_EMAIL_NOTIFICATIONS=false```
 
 4. Restart CKAN. For example if you've deployed CKAN with Apache on Ubuntu:
 
@@ -50,28 +50,39 @@ Note: if you are using a dockerised CKAN environment add this environment variab
 
 
 ## Approval Flow for Dataset
-1. All publisher users can save datasets as drafts for later editing, while creating/updating datasets without publishing it to the public.
-<img width="1100" alt="Screenshot 2022-11-23 at 8 43 38 AM" src="https://user-images.githubusercontent.com/87696933/203462820-9b5053cc-cad2-4353-afc0-f93fd144f9c4.png">
+1. On create/update of a dataset, all editors can save their datasets as **in progress** to work on datasets without submitting for review.
+<img width="893" height="78" alt="image" src="https://github.com/user-attachments/assets/fa9fabbb-bc76-48c0-831b-19ed7c0fc076" />
+<img width="1258" height="367" alt="image" src="https://github.com/user-attachments/assets/4d9d8c1e-5ea6-471f-91cc-6e54b3a684dd" />
 
+2. Only editors within any given organisation can submit a dataset for review.
+<img width="855" height="72" alt="image" src="https://github.com/user-attachments/assets/94164b08-a15e-4ffd-b7e8-5e546191cd06" />
 
-2. Users with editor role in organization can create a dataset and submit it for approval
-**Editors user get this message**
-<img width="1017" alt="Screenshot 2022-11-23 at 9 02 22 AM" src="https://user-images.githubusercontent.com/87696933/203462885-de0da117-98f3-4dae-b8e9-423acc4aa0e2.png">
+<br> **Editors get this message:**
+<img width="1256" height="478" alt="image" src="https://github.com/user-attachments/assets/5fcf918c-8753-465d-8fce-9707d1ab5891" />
 
-**Submit for approval by clicking finish button.**
-<img width="999" alt="Screenshot 2022-11-23 at 9 02 32 AM" src="https://user-images.githubusercontent.com/87696933/203462940-2aaffcc8-537d-43d6-863d-07cc0f73f481.png">
+<br>*Note: All organisation admins are able to create and update datasets without having to submit for review.*
 
-3. Organization admin receives the email notification when dataset is submitted for approval.
-**Example:**
-<img width="839" alt="Screenshot 2022-11-23 at 9 04 30 AM" src="https://user-images.githubusercontent.com/87696933/203463066-5edbd734-35d2-4a55-a2c2-ad80af26b68c.png">
-4. Users with admin role in organization can reivew with approving or rejecting the dataset.
-<img width="883" alt="Screenshot 2022-11-23 at 9 06 14 AM" src="https://user-images.githubusercontent.com/87696933/203463236-c372451e-f8a3-415e-b12b-d881d5651c8f.png">
-5. If dataset is approved by admin, it will be published and visible to all users.
-<img width="1496" alt="Screenshot 2022-11-23 at 9 08 13 AM" src="https://user-images.githubusercontent.com/87696933/203463433-305c0478-2ada-4320-9f85-e72182a3802c.png">
-6. If dataset is rejected, it will be visible to only editor and syasadmin users.
-<img width="1051" alt="Screenshot 2022-11-23 at 9 06 56 AM" src="https://user-images.githubusercontent.com/87696933/203463317-a1926f40-31c0-44b6-b4e7-00b6f7a9110d.png">
-5. If dataset is rejected, editor can edit the dataset and submit it for approval again.
+3. When a dataset is submitted for review, an email is sent to all admins (reviewers) of the specified organisation.
+<img width="893" height="356" alt="image" src="https://github.com/user-attachments/assets/bbb2749e-6f1d-4c7f-9774-c5c434af2ffc" />
 
-## License
+4. Users are able to view both their own datasets pending review and any submitted datasets they need to review
+<br>	**An editor can see datasets they have requested for review**
+<img width="1233" height="369" alt="image" src="https://github.com/user-attachments/assets/fb86524a-3a80-4952-9fee-2315ba5cef2a" />
 
-[AGPL](https://www.gnu.org/licenses/agpl-3.0.en.html)
+<br>	**An admin can see datasets that they need to review**
+<img width="1243" height="379" alt="image" src="https://github.com/user-attachments/assets/b3f785cd-cd04-46ab-a5cf-466c437158d2" />
+
+6. To review, an admin of the organisation can choose to **approve** or **reject** the dataset
+<img width="1249" height="496" alt="image" src="https://github.com/user-attachments/assets/a040f7e0-8130-4231-9cd1-c95c0f7829fb" />
+
+ a. on reject they can add a rejection reason
+ <img width="824" height="365" alt="image" src="https://github.com/user-attachments/assets/d963be7e-9b17-450b-bf54-684e28a82d07" />
+
+ b. user is emailed their review outcome
+ <img width="1157" height="314" alt="image" src="https://github.com/user-attachments/assets/b9884761-dbd3-477d-bcb5-5169d7f6e0a6" />
+
+7. All datasets are enforced **private** until the dataset is approved. During **in progress** or on rejection, the dataset will remain private
+     a. this means **in progress** and **rejected** datasets are only visible to organisation members
+
+8. At any point (during or after dataset review), an editor can go back into the dataset, make changes, and submit for review again
+
