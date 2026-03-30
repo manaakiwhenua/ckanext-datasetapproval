@@ -6,6 +6,7 @@ from ckan.plugins import toolkit
 from ckan.lib.mailer import mail_user
 from ckan.lib.base import render
 from ckan.logic.action.get import member_list as core_member_list
+from ckan.lib.helpers import helper_functions as h
 
 log = logging.getLogger(__name__)
 
@@ -40,7 +41,7 @@ def mail_package_review_request_to_admins(context, data_dict, _type='new'):
 
 
 
-def mail_package_approve_reject_notification_to_editors(package_id, publishing_status, rejection_reason=None):
+def mail_package_approve_reject_notification_to_editors(package_id, publishing_status, feedback=None):
     if config.get('ckanext.approval.turn_on_email_notifications', 'true') == 'false':
         log.debug('Email notifications are turned off, not sending approve/reject notification email.')
         return
@@ -48,7 +49,7 @@ def mail_package_approve_reject_notification_to_editors(package_id, publishing_s
     editor = model.User.get(package_dict.get('creator_user_id'))
     if editor.email:
         subj = _compose_email_subj_for_editors(publishing_status)
-        body = _compose_email_body_for_editors(editor, package_dict, publishing_status, rejection_reason)
+        body = _compose_email_body_for_editors(editor, package_dict, publishing_status, feedback)
         try:
             mail_user(editor, subj, body)
         except Exception as e:
@@ -101,24 +102,30 @@ def _compose_email_body_for_admins(context, data_dict, user, _type):
     return email_body
 
 
-def _compose_email_body_for_editors(user, package_dict, state, rejection_reason=None):
+def _compose_email_body_for_editors(user, package_dict, state, feedback=None):
     pkg_link = toolkit.url_for('dataset.read', id=package_dict['name'], qualified=True)
     editor_name = user.fullname or user.name
     site_title = config.get('ckan.site_title')
     site_url = config.get('ckan.site_url')
     package_title = package_dict.get('title')
     package_url = pkg_link
+    formatted_feedback = ""
+    for key, value in feedback.items():
+        # if exists in vocab, otherwise just use raw value
+        label_value = h.vocab_label(key, value)
+        formatted_feedback += f"- {key.replace('_', ' ').title()}: {label_value}\n"
 
     approval_paragraph = f"Your dataset \"{package_title}\" has been approved and published."
     rejection_paragraph = (
         f"Your dataset \"{package_title}\" has been reviewed and rejected by the reviewer. "
-        f"Please see the following feedback. You can update the dataset and resubmit it for further review.\n\n"
-        f"Feedback:\n'{rejection_reason}'"
+        f"You can update the dataset and resubmit it for further review.\n\n"
     )
     
     email_body = (
         f"Dear {editor_name.title()},\n\n"
         f"{approval_paragraph if state == 'approved' else rejection_paragraph}\n\n"
+        f"Please refer to the following comments.\n\n"
+        f"{formatted_feedback}\n"
         f"You can view the dataset at the following link:\n\n"
         f"{package_url}\n\n"
         f"--\n"
