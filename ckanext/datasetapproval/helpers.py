@@ -3,7 +3,7 @@ from datetime import datetime
 from ckanext.datasetapproval import models
 
 from ckan.plugins import toolkit
-from .enums import VOCABS
+from .enums import VOCAB_ENUMS
 
 log = logging.getLogger(__name__)
 
@@ -45,14 +45,27 @@ def is_admin(user, organisation=None):
                 and i.get('id') == organisation for i in user_orgs])
     return any([i.get('capacity') == 'admin' for i in user_orgs])
 
-def get_vocab_group(group_name):
-    return VOCABS.get(group_name, {})
 
-def vocab_label(field, key):
-    return VOCABS.get(field, {}).get(key, key)
+def get_vocab_group(group_name):
+    # need to map the group name to the correct enum class then grab all enums as a dict with key and value
+    enum_cls = getattr(VOCAB_ENUMS, group_name, None)
+    if not enum_cls:
+        log.warning(f"Vocabulary group {group_name} not found in VOCAB_ENUMS")
+        return {}
+    return {e.name: e.value for e in enum_cls}
+
+def vocab_label(key, value):
+    enum_cls = getattr(VOCAB_ENUMS, key, None)
+    if not enum_cls:
+        return value
+    try:
+        return enum_cls[value].value
+    except KeyError:
+        return value
 
 def add_reviewal_details_to_pkg(pkg_dict, reviewer_name, reviewer_email, review_date = None):
-    ## does the review type need to be added here? Or is this present on the dataset form
+    ## may need to change this in future but for now can leave if decided better to just store on a separate table
+    ## TODO: remove this if decided we no longer want to store details on pkg
     pkg_dict['reviewer_name'] = reviewer_name
     pkg_dict['reviewer_email'] = reviewer_email
     if review_date is None:
@@ -60,17 +73,6 @@ def add_reviewal_details_to_pkg(pkg_dict, reviewer_name, reviewer_email, review_
         review_date = current_date.strftime("%Y-%m-%d")
     pkg_dict['review_date'] = review_date
     return pkg_dict
-
-def add_approval_details_to_pkg(pkg_dict, approver_name, approver_email, approve_date = None):
-    ## does approval type need to be added here? Or is this present on the dataset form
-    pkg_dict['approver_name'] = approver_name
-    pkg_dict['approver_email'] = approver_email
-    if approve_date is None:
-        current_date = datetime.now()
-        approve_date = current_date.strftime("%Y-%m-%d")
-    pkg_dict['approve_date'] = approve_date
-    return pkg_dict
-
 def get_reviewer_decisions(dataset_id):
     '''
     Get all review decisions for a given dataset
