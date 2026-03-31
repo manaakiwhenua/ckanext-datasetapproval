@@ -24,12 +24,17 @@ class VOCAB_ENUMS:
     approval_outcome = ApprovalOutcome
     compliance_status = ComplianceStatus
 
-class ReviewDecisionType(Enum):
+class ReviewActionType(Enum):
+    # Currently only approve and reject actions are supported. Possible future actions include 'recommend for approval'.
     APPROVE = 'approve'
     REJECT = 'reject'
 
-# Mapping of reviewer decisions to the publishing status of the dataset after review
+class ReviewerType(Enum):
+    # Allowing for possibility of multiple reviewer types. Currently only one reviewer type is supported. Suggested future types include 'approver'.
+    REVIEWER = 'reviewer'
+
+# Mapping of reviewer actions to the publishing status of the dataset after review
 review_outcome_mapping = {
-        ReviewDecisionType.REJECT: 'rejected',
-        ReviewDecisionType.APPROVE: 'approved'
+        ReviewActionType.REJECT: 'rejected',
+        ReviewActionType.APPROVE: 'approved'
     }

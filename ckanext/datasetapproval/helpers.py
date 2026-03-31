@@ -73,10 +73,11 @@ def add_reviewal_details_to_pkg(pkg_dict, reviewer_name, reviewer_email, review_
         review_date = current_date.strftime("%Y-%m-%d")
     pkg_dict['review_date'] = review_date
     return pkg_dict
-def get_reviewer_decisions(dataset_id):
+
+def get_reviewer_actions(dataset_id):
     '''
-    Get all review decisions for a given dataset
+    Get all review actions for a given dataset
     '''
-    decisions = models.meta.Session.query(models.ReviewDecision).filter_by(dataset_id=dataset_id).all()
-    return decisions
+    actions = models.meta.Session.query(models.ReviewAction).filter_by(dataset_id=dataset_id).all()
+    return actions
     
