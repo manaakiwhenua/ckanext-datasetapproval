@@ -34,7 +34,7 @@ class VOCAB_ENUMS:
     review_type = ReviewType
     approval_type = ApprovalType
 
-class ReviewActionType(Enum):
+class WorkflowActionType(Enum):
     # Currently only approve and reject actions are supported. Possible future actions include 'recommend for approval'.
     APPROVE = 'approve'
     REJECT = 'reject'
@@ -45,6 +45,6 @@ class ReviewerType(Enum):
 
 # Mapping of reviewer actions to the publishing status of the dataset after review
 review_outcome_mapping = {
-        ReviewActionType.REJECT: 'rejected',
-        ReviewActionType.APPROVE: 'approved'
+        WorkflowActionType.REJECT: 'rejected',
+        WorkflowActionType.APPROVE: 'approved'
     }
