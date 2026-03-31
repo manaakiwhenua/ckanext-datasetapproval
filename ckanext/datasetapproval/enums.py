@@ -19,7 +19,17 @@ class ComplianceStatus(str, Enum):
     compliant = "Compliant"
     partial = "Partially compliant"
 
+class ReviewType(str, Enum):
+    metadata_documentation = "Metadata and Documentation Only Review"
+    scientific_technical = "Scientific and Technical Review"
+
+class ApprovalType(str, Enum):
+    minimal = "Minimal Approval (\"Sign-off only\")"
+    compliance = "Approver Compliance Check"
+
 class VOCAB_ENUMS:
     rejection_reason = RejectionReason
     approval_outcome = ApprovalOutcome
     compliance_status = ComplianceStatus
+    review_type = ReviewType
+    approval_type = ApprovalType
