@@ -71,3 +71,6 @@ def add_reviewal_details_to_pkg(pkg_dict, reviewer_name, reviewer_email, review_
         review_date = current_date.strftime("%Y-%m-%d")
     pkg_dict['review_date'] = review_date
     return pkg_dict
+
+def retrieve_data_management_email():
+    return toolkit.config.get(u'ckan.datastore.data_management_email') or ""
