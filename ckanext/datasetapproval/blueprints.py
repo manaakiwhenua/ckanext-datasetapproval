@@ -9,9 +9,10 @@ from ckan.plugins import toolkit
 import ckan.lib.base as base
 from ckan.views.user import _extra_template_variables
 import ckan.lib.helpers as h
+from ckan.lib.helpers import helper_functions as helpers
 from ckan.authz import users_role_for_group_or_org
 from ckan.lib.mailer import MailerException
-from ckanext.datasetapproval.mailer import mail_package_approve_reject_notification_to_editors
+from ckanext.datasetapproval.mailer import mail_package_approve_reject_notification_to_editors, _compose_email_body_for_editors
 from ckan.views.dataset import url_with_params
 from typing import Union
 from ckan.types import Response
@@ -32,14 +33,12 @@ def search_url(params, package_type=None):
     url = h.url_for('approval.dataset_review', id=toolkit.c.user)
     return url_with_params(url, params)
 
-
-def approve(id):
-    return _make_action(id, 'approve')
-
-def reject(id):
-    rejection_reason = toolkit.request.form.get('rejection_reason')
-    return _make_action(id, 'reject', rejection_reason=rejection_reason)
-
+def submit_feedback(id):
+    feedback = toolkit.request.form.to_dict()
+    action = toolkit.request.form.get('action')
+    feedback.pop('action', None)  # Remove action from feedback to avoid confusion
+    log.debug(f"action: {action}, feedback: {feedback}")
+    return _make_action(id, action, feedback=feedback)
 
 def pending_datasets(id: str) -> Union[Response, str]:
     if toolkit.request.endpoint.endswith('dataset_review'):
@@ -108,7 +107,7 @@ def _raise_not_authz_or_not_pending(id):
     else :
         raise toolkit.abort(404, 'Dataset "{}" not found'.format(id))
 
-def _make_action(package_id, action='reject', rejection_reason=None):
+def _make_action(package_id, action='reject', feedback=None):
     states = {
         'reject': 'rejected',
         'approve': 'approved'
@@ -119,7 +118,7 @@ def _make_action(package_id, action='reject', rejection_reason=None):
         'model': model,
         'user': toolkit.c.user,
         'ignore_auth': True,
-        'rejection_reason': rejection_reason
+        'feedback': feedback
     }
     # check access and state
     _raise_not_authz_or_not_pending(package_id)
@@ -141,14 +140,13 @@ def _make_action(package_id, action='reject', rejection_reason=None):
         return h.redirect_to(u'{}.read'.format('dataset'),
                              id=package_id)
     try:
-        mail_package_approve_reject_notification_to_editors(package_id, pkg.get("publishing_status"), rejection_reason)
+        mail_package_approve_reject_notification_to_editors(package_id, pkg.get("publishing_status"),  feedback)
         toolkit.h.flash_success("Review response sent to dataset creator.")
     except MailerException as e:
         log.error(f"Failed to send review request email: {e}")
         toolkit.h.flash_error("Unable to send review response email to dataset creator. Please contact the datastore administrator.")
     return toolkit.redirect_to(controller='dataset', action='read', id=package_id)
 
-approveBlueprint.add_url_rule('/dataset-publish/<id>/approve', view_func=approve)
-approveBlueprint.add_url_rule('/dataset-publish/<id>/reject', view_func=reject, methods=['POST'])
+approveBlueprint.add_url_rule('/dataset-publish/<id>/submit_feedback', view_func=submit_feedback, methods=['POST'])
 approveBlueprint.add_url_rule(u'/user/<id>/dataset_review', view_func=pending_datasets, endpoint='dataset_review')
 approveBlueprint.add_url_rule(u'/user/<id>/my_requests', view_func=pending_datasets, endpoint='my_requests')

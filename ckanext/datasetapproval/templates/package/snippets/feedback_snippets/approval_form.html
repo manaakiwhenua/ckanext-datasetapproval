@@ -1,0 +1,33 @@
+<!-- Compliance & Approval -->
+ <fieldset class="mb-3">
+    <legend>Approval Decision</legend>
+
+    <label class="form-label">Compliance Status</label>
+    <select name="compliance_status" class="form-control" required>
+        <option value="">{% trans %}Select status{% endtrans %}</option>
+        {% for key, label in h.get_vocab_group("compliance_status").items() %}
+            {% if key != "non_compliant" %}
+                <option value="{{ key }}">{{ _(label) }}</option>
+            {% endif %}
+        {% endfor %}
+    </select>
+
+    <label class="form-label mt-2">Approval Outcome</label>
+    <select name="approval_outcome" class="form-control" required>
+        <option value="">{% trans %}Select status{% endtrans %}</option>
+        {% for key, label in h.get_vocab_group("approval_outcome").items() %}
+            <option value="{{ key }}">{{ _(label) }}</option>
+        {% endfor %}
+    </select>
+
+    <label for="comments_box" class="form-label mt-2">{% trans %}Add any comments regarding the Approval below (max 1000 characters){% endtrans %}</label>
+    <textarea 
+        id="comments_box" 
+        name="comments_box" 
+        class="form-control" 
+        rows="3" 
+        maxlength="1000" 
+        required
+        ondrop="return false;" oninput="this.value = this.value.replace(/[^\x00-\x7F]/g, '')"
+        placeholder="{% trans %}Comments here will be sent to the dataset editor...{% endtrans %}"></textarea>
+</fieldset>
