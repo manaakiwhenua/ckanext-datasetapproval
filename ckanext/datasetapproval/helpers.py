@@ -80,4 +80,6 @@ def get_workflow_actions(dataset_id):
     '''
     actions = models.meta.Session.query(models.WorkflowAction).filter_by(dataset_id=dataset_id).all()
     return actions
-    
+
+def retrieve_data_management_email():
+    return toolkit.config.get(u'ckan.datastore.data_management_email') or ""
