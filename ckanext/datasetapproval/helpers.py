@@ -1,5 +1,7 @@
 import logging
 from datetime import datetime
+from ckanext.datasetapproval import models
+
 from ckan.plugins import toolkit
 from .enums import VOCAB_ENUMS
 
@@ -71,3 +73,11 @@ def add_reviewal_details_to_pkg(pkg_dict, reviewer_name, reviewer_email, review_
         review_date = current_date.strftime("%Y-%m-%d")
     pkg_dict['review_date'] = review_date
     return pkg_dict
+
+def get_workflow_actions(dataset_id):
+    '''
+    Get all review actions for a given dataset
+    '''
+    actions = models.meta.Session.query(models.WorkflowAction).filter_by(dataset_id=dataset_id).all()
+    return actions
+    

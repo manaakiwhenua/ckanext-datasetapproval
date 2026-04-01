@@ -1,11 +1,8 @@
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
 from ckan.lib.plugins import DefaultPermissionLabels
-from ckanext.datasetapproval import views
+from ckanext.datasetapproval import actions, blueprints, helpers, views
 
-from ckanext.datasetapproval import actions, blueprints, helpers
-
-import json
 import logging as log
 from ckan.common import _, c
 
@@ -41,7 +38,7 @@ class DatasetapprovalPlugin(plugins.SingletonPlugin,
             'resource_update': actions.resource_update,
             'check_user_admin': actions.check_user_admin,
         }
-        
+
     def is_fallback(self):
         # Return True to register this plugin as the default handler for
         return True
@@ -58,6 +55,7 @@ class DatasetapprovalPlugin(plugins.SingletonPlugin,
             'vocab_label': helpers.vocab_label,
             'get_vocab_group': helpers.get_vocab_group,
             'add_reviewal_details_to_pkg': helpers.add_reviewal_details_to_pkg,
+            'get_workflow_actions': helpers.get_workflow_actions,
         }
 
     def before_search(self, search_params):

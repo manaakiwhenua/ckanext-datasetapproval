@@ -16,6 +16,8 @@ from ckanext.datasetapproval.mailer import mail_package_approve_reject_notificat
 from ckan.views.dataset import url_with_params
 from typing import Union
 from ckan.types import Response
+from ckanext.datasetapproval import models
+from ckanext.datasetapproval.enums import WorkflowActionType, review_outcome_mapping
 
 log = logging.getLogger(__name__)
 
@@ -37,8 +39,7 @@ def submit_feedback(id):
     feedback = toolkit.request.form.to_dict()
     action = toolkit.request.form.get('action')
     feedback.pop('action', None)  # Remove action from feedback to avoid confusion
-    log.debug(f"action: {action}, feedback: {feedback}")
-    return _make_action(id, action, feedback=feedback)
+    return _make_action(id, WorkflowActionType(action), feedback=feedback)
 
 def pending_datasets(id: str) -> Union[Response, str]:
     if toolkit.request.endpoint.endswith('dataset_review'):
@@ -107,13 +108,8 @@ def _raise_not_authz_or_not_pending(id):
     else :
         raise toolkit.abort(404, 'Dataset "{}" not found'.format(id))
 
-def _make_action(package_id, action='reject', feedback=None):
-    states = {
-        'reject': 'rejected',
-        'approve': 'approved'
-    }
-    # grab the old dict
-    set_private = action == 'reject'
+def _make_action(package_id, action : WorkflowActionType, feedback: dict[str, any]=None):
+    set_private = action == WorkflowActionType.REJECT
     context = {
         'model': model,
         'user': toolkit.c.user,
@@ -126,8 +122,8 @@ def _make_action(package_id, action='reject', feedback=None):
             context,
             {'id': package_id}
         )
-    try:
-        pkg['publishing_status'] = states[action]
+    try:        
+        pkg['publishing_status'] = review_outcome_mapping[action]
         if set_private:
             pkg['private'] = True
         toolkit.get_action('package_update')(
@@ -140,7 +136,15 @@ def _make_action(package_id, action='reject', feedback=None):
         return h.redirect_to(u'{}.read'.format('dataset'),
                              id=package_id)
     try:
-        mail_package_approve_reject_notification_to_editors(package_id, pkg.get("publishing_status"),  feedback)
+        models.save_workflow_action_and_comments(package_id, feedback, action)
+    except Exception as e:
+        log.error(f"Error saving reviewer action and comments for dataset {package_id}: {e}")
+        h.flash_error("Unable to save review feedback. Please contact the datastore administrator.")
+        return h.redirect_to(u'{}.read'.format('dataset'),
+                             id=package_id)
+
+    try:
+        mail_package_approve_reject_notification_to_editors(package_id, pkg.get("publishing_status"), feedback)
         toolkit.h.flash_success("Review response sent to dataset creator.")
     except MailerException as e:
         log.error(f"Failed to send review request email: {e}")
