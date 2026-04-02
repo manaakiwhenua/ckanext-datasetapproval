@@ -70,8 +70,10 @@ def get_workflow_actions(dataset_id):
     actions = models.meta.Session.query(models.WorkflowAction).filter_by(dataset_id=dataset_id).order_by(models.WorkflowAction.submitted_date.desc()).all()
     return actions
 
-def map_workflow_action_to_decision_type(current_workflow_action : models.WorkflowAction):
+def retrieve_data_management_email():
+    return toolkit.config.get(u'ckan.datastore.data_management_email') or ""
 
+def map_workflow_action_to_decision_type(current_workflow_action : models.WorkflowAction):
     try:
         workflow_action_type = WorkflowActionType(current_workflow_action.workflow_action)
     except ValueError:
