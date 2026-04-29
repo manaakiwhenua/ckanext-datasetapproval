@@ -25,7 +25,6 @@ class ReviewComment(toolkit.BaseModel):
     id = Column(UUID(as_uuid=True), primary_key=True, nullable=False)
     workflow_action_id = Column(UUID(as_uuid=True), ForeignKey('workflow_action.id'), nullable=False)
     dataset_id = Column(UnicodeText, ForeignKey('package.id'), nullable=False, index=True)
-    compliance_status = Column(UnicodeText)
     rejection_reason = Column(UnicodeText)
     rejection_reason_comments = Column(UnicodeText)
     review_type = Column(UnicodeText)
@@ -69,16 +68,17 @@ def create_workflow_action(dataset_id, feedback : dict[str, any], workflow_actio
 def create_review_comment(dataset_id, feedback : dict[str, any], workflow_action_id):
     approval_outcome_comments = feedback.get("approval_outcome_comments", None)
     approval_details = feedback.get("approval_details", None)
+    entered_date = feedback.get("condition_expiry_date", None)
     if approval_outcome_comments and approval_outcome_comments.isspace():
         approval_outcome_comments = None
     if approval_details and approval_details.isspace():
         approval_details = None
+    condition_expiry_date = entered_date or None
 
     review_comment = ReviewComment(
         id = uuid.uuid4(),
         workflow_action_id = workflow_action_id,
         dataset_id = dataset_id,
-        compliance_status = feedback.get("compliance_status", None),
         review_type = feedback.get("review_type", None),
         approval_type = feedback.get("approval_type", None),
         rejection_reason = feedback.get("rejection_reason", None),
@@ -87,7 +87,7 @@ def create_review_comment(dataset_id, feedback : dict[str, any], workflow_action
         approval_outcome = feedback.get("approval_outcome", None),
         approval_outcome_comments = approval_outcome_comments,
         approval_details = approval_details,
-        condition_expiry_date = feedback.get("condition_expiry_date", None)
+        condition_expiry_date = condition_expiry_date
 
     )
     return review_comment
