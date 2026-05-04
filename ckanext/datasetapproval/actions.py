@@ -1,6 +1,7 @@
 import logging
 import ckan.authz as authz
-
+from ckanext.datasetapproval import models
+from ckanext.datasetapproval.models import WorkflowAction, ReviewComment, WorkflowHistoryEntry
 from ckan.lib.mailer import MailerException
 import ckan.plugins.toolkit as tk
 import ckan.plugins as p
@@ -79,6 +80,44 @@ def _wrap_publish_review(up_func, context, data_dict, *, action_name):
                 "Unable to send review request to collection admins. Please contact the datastore administrator."
             )
     return result
+
+@tk.side_effect_free
+def workflow_actions_show(context, data_dict) -> list[WorkflowHistoryEntry]:
+    """
+    Get all reviewer actions and comments for a given dataset
+
+    Parameters:
+        context (dict): the CKAN action context, not used in this function but required as a parameter
+        data_dict (dict): a dictionary containing the dataset ID and owner organization ID.E.g. {'id': '1234', 'owner_org': '5678'}
+    """
+    dataset_id = tk.get_or_bust(data_dict, "id")
+
+    if not dataset_id or not isinstance(dataset_id, str):
+        log.warning("Dataset ID is missing or invalid when trying to retrieve workflow actions")
+        return []
+    
+    tk.check_access('workflow_history_show', context, data_dict)    
+    actions : list[WorkflowAction] = WorkflowAction.get_actions_for_dataset(dataset_id)
+    comments : list[ReviewComment] = ReviewComment.get_comments_for_dataset(dataset_id)
+
+    # Workflow actions and comments combined into a single object, with the comments nested under the relevant workflow action
+    workflow_actions_with_comments : list[WorkflowHistoryEntry] = []
+    for action in actions:
+        review_comment : ReviewComment | None = next((c for c in comments if c.workflow_action_id == action.id), None)
+        workflow_actions_with_comments.append(WorkflowHistoryEntry(action, review_comment))
+    return workflow_actions_with_comments
+  
+@tk.side_effect_free    
+def latest_workflow_action_show(context, data_dict) -> WorkflowHistoryEntry | None:
+    '''
+    Get only the most recent workflow action for a given dataset. Doesn't require permissions check or workflow action comments.
+    '''
+    dataset_id = tk.get_or_bust(data_dict, "id")
+    if not dataset_id or not isinstance(dataset_id, str):
+        log.warning("Dataset ID is missing or invalid when trying to retrieve latest workflow action")
+        return None
+    workflow_action = WorkflowAction.get_latest_action_for_dataset(dataset_id)
+    return WorkflowHistoryEntry(action=workflow_action, comment=None)
 
 @tk.chained_action
 @logic.side_effect_free

@@ -1,9 +1,8 @@
-import logging
 from datetime import datetime
-from ckanext.datasetapproval import models
-
+import logging
 from ckan.plugins import toolkit
-from .enums import VOCAB_ENUMS, review_outcome_mapping, WorkflowActionType
+from .enums import VOCAB_ENUMS
+from zoneinfo import ZoneInfo
 
 log = logging.getLogger(__name__)
 
@@ -28,7 +27,7 @@ def get_org_from_package_name(package_name):
 def is_admin(user, organisation=None):
     """
     Returns True if user is admin of given organisation.
-    If office param is not provided checks if user is admin of any organisation
+    If organisation param is not provided checks if user is admin of ANY organisation
 
     :param user: user name
     :type user: string
@@ -63,21 +62,8 @@ def vocab_label(key, value):
     except KeyError:
         return value
 
-def get_workflow_actions(dataset_id):
-    '''
-    Get all review actions for a given dataset
-    '''
-    actions = models.meta.Session.query(models.WorkflowAction).filter_by(dataset_id=dataset_id).order_by(models.WorkflowAction.submitted_date.desc()).all()
-    return actions
+def convert_utc_to_local_time_string(utc_dt : datetime, tz_name='Pacific/Auckland') -> str:
+    return utc_dt.astimezone(ZoneInfo(tz_name)).strftime('%Y-%m-%d %I:%M %p') + f' ({ZoneInfo(tz_name).key} time)'
 
 def retrieve_data_management_email():
     return toolkit.config.get(u'ckan.datastore.data_management_email') or ""
-
-def map_workflow_action_to_decision_type(current_workflow_action : models.WorkflowAction):
-    try:
-        workflow_action_type = WorkflowActionType(current_workflow_action.workflow_action)
-    except ValueError:
-        log.warning(f"Workflow action {current_workflow_action.workflow_action} not found in WorkflowActionType enum")
-        return ""
-
-    return review_outcome_mapping[workflow_action_type]
