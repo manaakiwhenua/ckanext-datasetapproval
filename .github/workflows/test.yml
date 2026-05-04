@@ -7,16 +7,16 @@ jobs:
       # The CKAN version tag of the Solr and Postgres containers should match
       # the one of the container the tests run on.
       # You can switch this base image with a custom image tailored to your project
-      image: openknowledge/ckan-dev:2.9
+      image: ckan/ckan-dev:2.10
     services:
       solr:
-        image: ckan/ckan-solr-dev:2.9
+        image: ckan/ckan-solr:2.10-solr9-spatial
       postgres:
-        image: ckan/ckan-postgres-dev:2.9
+        image: postgis/postgis:12-3.5-alpine
         env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: postgres
+          POSTGRES_USER: ckan_default
+          POSTGRES_PASSWORD: pass
+          POSTGRES_DB: ckan_test
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
       redis:
           image: redis:3
@@ -42,7 +42,7 @@ jobs:
         # Replace default path to CKAN core config file with the one on the container
         sed -i -e 's/use = config:.*/use = config:\/srv\/app\/src\/ckan\/test-core.ini/' test.ini
 
-        ckan -c test.ini db init
+        ckan -c test.ini db init    
     - name: Run tests
       run: pytest --ckan-ini=test.ini --cov=ckanext.datasetapproval --disable-warnings ckanext/datasetapproval
 
