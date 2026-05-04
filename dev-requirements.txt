@@ -1,1 +1,2 @@
 pytest-ckan
+ckan == 2.10.*
