@@ -20,6 +20,7 @@ def is_user_editor_of_org(org_id, user_id):
 def publishing_check(context, data_dict):
     admin_editing = context.get("admin_editing", False)
     submit_review = context.get("submit_review", False)
+    bypass_review = context.get("bypass_review", False)
     user_id = (
         tk.current_user.id
         if tk.current_user and not tk.current_user.is_anonymous
@@ -33,19 +34,20 @@ def publishing_check(context, data_dict):
         data_dict = set_visibility_on_approval_or_rejection(data_dict)      
     ## if the dataset is being updated by an admin then should bypass the approval state
     elif admin_editing and data_dict.get("id"):
-        old_data_dict = tk.get_action("package_show")(
-            context, {"id": data_dict.get("id")}
-        )
         data_dict["publishing_status"] = "approved"
         data_dict = set_visibility_on_approval_or_rejection(data_dict)
-    ## if the dataset is being created/updated by an editor then status must be set to "in_review" unless they are saving as a draft
+    ## if the dataset is being created/updated by an editor then status must be set to "in_review" unless they are saving as a draft or only changing visibility
     elif is_user_editor_of_org(org_id, user_id):
-        context.update({'send_request': submit_review})
-        if submit_review:
-            data_dict['publishing_status'] = "in_review"
+        # need this check here still to ensure it stays approved
+        if bypass_review == True:
+            data_dict = set_visibility_on_approval_or_rejection(data_dict)
         else:
-            data_dict["private"] = "true"
-            data_dict['publishing_status'] = "in_progress"
+            context.update({'send_request': submit_review})
+            if submit_review:
+                data_dict['publishing_status'] = "in_review"
+            else:
+                data_dict["private"] = "true"
+                data_dict['publishing_status'] = "in_progress"
     return data_dict
 
 def set_visibility_on_approval_or_rejection(data_dict):
@@ -163,3 +165,18 @@ def retrieve_rejection_reasons(*args):
     if review_type_enum == ReviewType.metadata_documentation:
         rejection_reasons.pop("data_quality", None)
     return rejection_reasons
+
+@tk.side_effect_free
+def retrieve_publishing_status(*args):
+    package_id = tk.request.args.get("package_id")
+    dataset_dict = tk.get_action('package_show') \
+        ({u'ignore_auth': True}, {'id': package_id})
+    tk.check_access('retrieve_publishing_status', {"user":tk.c.user}, dataset_dict)
+
+    publishing_status = dataset_dict.get('publishing_status', None)
+    if publishing_status is None:
+        raise tk.ValidationError({
+            'message': "publishing status not found on dataset."
+        })
+    
+    return publishing_status
