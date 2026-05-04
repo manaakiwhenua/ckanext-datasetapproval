@@ -1,8 +1,7 @@
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
 from ckan.lib.plugins import DefaultPermissionLabels
-from ckanext.datasetapproval import actions, blueprints, helpers, views, workflow_action_helpers
-
+from ckanext.datasetapproval import actions, blueprints, helpers, views, workflow_action_helpers, auth
 import logging as log
 from ckan.common import _, c
 
@@ -18,8 +17,7 @@ class DatasetapprovalPlugin(plugins.SingletonPlugin,
     plugins.implements(plugins.ITemplateHelpers)
     plugins.implements(plugins.IDatasetForm)
     plugins.implements(plugins.IPermissionLabels, inherit=True)
-
-
+    plugins.implements(plugins.IAuthFunctions)
 
     # IConfigurer
     def update_config(self, config_):
@@ -126,3 +124,7 @@ class DatasetapprovalPlugin(plugins.SingletonPlugin,
             )
             pkg_dict['latest_workflow_action'] = latest_workflow_action
         return pkg_dict
+        
+    # IAuthFunctions
+    def get_auth_functions(self):
+        return auth.get_auth_functions()
