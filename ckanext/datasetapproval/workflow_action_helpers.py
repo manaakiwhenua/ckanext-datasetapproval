@@ -18,15 +18,14 @@ def format_workflow_action_comment(historical_action : WorkflowHistoryEntry) -> 
     display_comment : str = ''
 
     if action_type == WorkflowActionType.REJECT.value and historical_action.comment is not None:
-        rejection_reason : str = comment.get('rejection_reason', '') or ''
+        display_reasons = format_rejection_reasons(comment.get('rejection_reasons', '') or '')
         rejection_reason_comments : str = comment.get('rejection_reason_comments', '') or ''
-        display_reason : str = getattr(VOCAB_ENUMS.rejection_reason, rejection_reason, '')        
-        display_comment = f"Rejection reason: '{display_reason}'. {rejection_reason_comments.capitalize()}"
+        display_comment = f"Rejection reasons: '{display_reasons}'. {rejection_reason_comments.capitalize()}"
     elif action_type == WorkflowActionType.APPROVE.value and comment is not None:
         approval_type : str = getattr(VOCAB_ENUMS.approval_outcome, comment.get('approval_outcome', ''), '') or ''
         approval_condition_details : str = comment.get('approval_details', '') or ''
         approval_outcome_comments : str = comment.get('approval_outcome_comments', '') or ''
-
+        
         display_comment = [approval_type.capitalize(), approval_outcome_comments.capitalize(), approval_condition_details.capitalize()]
         display_comment = '. '.join([c for c in display_comment if c != '']) 
 
@@ -48,3 +47,20 @@ def map_workflow_action_to_decision_type(workflow_action : WorkflowHistoryEntry)
         return ''
 
     return review_outcome_mapping.get(workflow_action_type, '').capitalize()
+
+def format_rejection_reasons(raw_rejection_reason: str | list[str]) -> str:
+    if not raw_rejection_reason:
+        return ""
+
+    # handle being passed through either as a string or list of strings
+    if isinstance(raw_rejection_reason, str):
+        rejection_reasons = raw_rejection_reason.strip("{}").split(",")
+    else:
+        rejection_reasons = raw_rejection_reason
+
+    reason_list = []
+    for rejection_reason in rejection_reasons:
+        enumerated_reason = getattr(VOCAB_ENUMS.rejection_reasons, rejection_reason, '')
+        reason_list.append(enumerated_reason.value if enumerated_reason else rejection_reason)
+    display_reasons = ", ".join(reason_list)
+    return display_reasons or ''

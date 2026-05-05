@@ -56,7 +56,7 @@ class ReviewComment(toolkit.BaseModel):
     id = Column(UUID(as_uuid=True), primary_key=True, nullable=False)
     workflow_action_id = Column(UUID(as_uuid=True), ForeignKey('workflow_action.id'), nullable=False)
     dataset_id = Column(UnicodeText, ForeignKey('package.id'), nullable=False, index=True)
-    rejection_reason = Column(UnicodeText)
+    rejection_reasons = Column(UnicodeText)
     rejection_reason_comments = Column(UnicodeText)
     review_type = Column(UnicodeText)
     approval_type = Column(UnicodeText)
@@ -71,7 +71,7 @@ class ReviewComment(toolkit.BaseModel):
             'id': str(self.id),
             'workflow_action_id': str(self.workflow_action_id),
             'dataset_id': self.dataset_id,
-            'rejection_reason': self.rejection_reason,
+            'rejection_reasons': self.rejection_reasons,
             'rejection_reason_comments': self.rejection_reason_comments,
             'review_type': self.review_type,
             'approval_type': self.approval_type,
@@ -143,7 +143,7 @@ def create_review_comment(dataset_id, feedback : dict[str, any], workflow_action
         dataset_id = dataset_id,
         review_type = feedback.get("review_type", None),
         approval_type = feedback.get("approval_type", None),
-        rejection_reason = feedback.get("rejection_reason", None),
+        rejection_reasons = feedback.get("rejection_reasons", None),
         rejection_reason_comments = feedback.get("rejection_reason_comments", None),
         resubmission_comments = feedback.get("resubmission_comments", None),
         approval_outcome = feedback.get("approval_outcome", None),
