@@ -67,3 +67,18 @@ def convert_utc_to_local_time_string(utc_dt : datetime, tz_name='Pacific/Aucklan
 
 def retrieve_data_management_email():
     return toolkit.config.get(u'ckan.datastore.data_management_email') or ""
+
+def retrieve_reviewer_guidelines_link():
+    return toolkit.config.get(u'ckanext.approval.reviewer_guidelines_link') or ""
+
+
+def get_helpers():
+    return {
+        'is_admin': is_admin,
+        'get_org_from_package_name': get_org_from_package_name,
+        'vocab_label': vocab_label,
+        'get_vocab_group': get_vocab_group,
+        'convert_utc_to_local_time_string': convert_utc_to_local_time_string,
+        'retrieve_data_management_email': retrieve_data_management_email,
+        'retrieve_reviewer_guidelines_link': retrieve_reviewer_guidelines_link,
+    }
