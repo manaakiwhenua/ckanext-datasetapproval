@@ -4,6 +4,10 @@
     flex-direction: row;
 }
 
+.form-group {
+    margin-bottom: 10px;
+}
+
 .multi-select-reasons {
     font-weight: normal;
 }

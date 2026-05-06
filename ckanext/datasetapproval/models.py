@@ -59,11 +59,10 @@ class ReviewComment(toolkit.BaseModel):
     rejection_reasons = Column(UnicodeText)
     rejection_reason_comments = Column(UnicodeText)
     review_type = Column(UnicodeText)
-    approval_type = Column(UnicodeText)
     resubmission_comments = Column(UnicodeText)
     approval_outcome = Column(UnicodeText)
     approval_outcome_comments = Column(UnicodeText)
-    approval_details = Column(UnicodeText)
+    approval_conditions_comments = Column(UnicodeText)
     condition_expiry_date = Column(DateTime)
 
     def as_dict(self):
@@ -74,11 +73,10 @@ class ReviewComment(toolkit.BaseModel):
             'rejection_reasons': self.rejection_reasons,
             'rejection_reason_comments': self.rejection_reason_comments,
             'review_type': self.review_type,
-            'approval_type': self.approval_type,
             'resubmission_comments': self.resubmission_comments,
             'approval_outcome': self.approval_outcome,
             'approval_outcome_comments': self.approval_outcome_comments,
-            'approval_details': self.approval_details,
+            'approval_conditions_comments': self.approval_conditions_comments,
             'condition_expiry_date': self.condition_expiry_date,
         }
     
@@ -129,12 +127,12 @@ def create_workflow_action(dataset_id, feedback : dict[str, any], workflow_actio
 
 def create_review_comment(dataset_id, feedback : dict[str, any], workflow_action_id):
     approval_outcome_comments = feedback.get("approval_outcome_comments", None)
-    approval_details = feedback.get("approval_details", None)
+    approval_conditions_comments = feedback.get("approval_conditions_comments", None)
     entered_date = feedback.get("condition_expiry_date", None)
     if approval_outcome_comments and approval_outcome_comments.isspace():
         approval_outcome_comments = None
-    if approval_details and approval_details.isspace():
-        approval_details = None
+    if approval_conditions_comments and approval_conditions_comments.isspace():
+        approval_conditions_comments = None
     condition_expiry_date = entered_date or None
 
     review_comment = ReviewComment(
@@ -142,13 +140,12 @@ def create_review_comment(dataset_id, feedback : dict[str, any], workflow_action
         workflow_action_id = workflow_action_id,
         dataset_id = dataset_id,
         review_type = feedback.get("review_type", None),
-        approval_type = feedback.get("approval_type", None),
         rejection_reasons = feedback.get("rejection_reasons", None),
         rejection_reason_comments = feedback.get("rejection_reason_comments", None),
         resubmission_comments = feedback.get("resubmission_comments", None),
         approval_outcome = feedback.get("approval_outcome", None),
         approval_outcome_comments = approval_outcome_comments,
-        approval_details = approval_details,
+        approval_conditions_comments = approval_conditions_comments,
         condition_expiry_date = condition_expiry_date
 
     )
