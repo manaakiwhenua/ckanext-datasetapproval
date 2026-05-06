@@ -5,6 +5,10 @@
 }
 
 /* approval/rejection form styling */
+.form-group {
+    margin-bottom: 10px;
+}
+
 .multi-select-reasons {
     font-weight: normal;
 }

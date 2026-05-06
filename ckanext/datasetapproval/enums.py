@@ -19,15 +19,10 @@ class ReviewType(str, Enum):
     metadata_documentation = "Metadata and Documentation Only Review"
     scientific_technical = "Scientific and Technical Review"
 
-class ApprovalType(str, Enum):
-    minimal = "Minimal Approval (\"Sign-off only\")"
-    compliance = "Approver Compliance Check"
-
 class VOCAB_ENUMS:
     rejection_reasons = RejectionReason
     approval_outcome = ApprovalOutcome
     review_type = ReviewType
-    approval_type = ApprovalType
 
 class WorkflowActionType(Enum):
     # Currently only approve and reject actions are supported. Possible future actions include 'recommend for approval'.
