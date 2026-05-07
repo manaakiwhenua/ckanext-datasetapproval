@@ -7,6 +7,28 @@
     <div class="alert alert-warning" role="alert">
       <p>{% trans %}This dataset is waiting for approval.{% endtrans %}</p>
       {% if h.is_admin(c.user, c.pkg_dict.owner_org) %}
+        {% if c.pkg_dict.additional_reviews_requested %}
+          <p>This dataset requires
+            <b>
+              {% for review_request in c.pkg_dict.additional_reviews_requested %}
+                {{ review_request.review_type }}{% if not loop.last %}, {% endif %}{% if loop.last%}.{% endif %}
+              {% endfor %}
+            </b>
+          </p>       
+        {% for review_request in c.pkg_dict.additional_reviews_requested %}
+        <div class="alert alert-light" role="alert">
+            <p><b>{{ review_request.review_type }} Request Comments</b></p>
+            {% if review_request.review_request_comments %}
+             <p>{{ review_request.review_request_comments[:2000] }}</p>
+             {% if review_request.review_request_comments|length > 2000 %}
+              <i>... (truncated)</i>
+             {% endif %}
+            {% else %}
+              <i>No comments were provided by the submitter for this review request.</i>
+            {% endif %}
+        </div>
+        {% endfor %}
+        {% endif %}
         {# TODO: remove style #}
         <div style="margin-top: 10px">
           <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#approveReasonModal">
@@ -26,6 +48,7 @@
           %}
           </div>
         </div>
+
       {% endif %}
     </div>
   {% elif c.pkg_dict.publishing_status  == 'rejected' %}

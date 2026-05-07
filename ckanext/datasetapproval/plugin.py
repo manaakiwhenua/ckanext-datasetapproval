@@ -112,13 +112,14 @@ class DatasetapprovalPlugin(plugins.SingletonPlugin,
         except RuntimeError:
             return pkg_dict
 
-        # Only add latest workflow action details to the dataset read page. No permissions or workflow action comments are required.
+        # Add latest workflow action details and additional reviews requested to the dataset read page. No permissions or workflow action comments are required.
         if endpoint and endpoint.endswith('dataset.read'):
             latest_workflow_action = toolkit.get_action('latest_workflow_action_show')(
                 {},
                 {'id': pkg_dict['id']}
             )
             pkg_dict['latest_workflow_action'] = latest_workflow_action
+            pkg_dict['additional_reviews_requested'] = helpers.get_review_types_for_display(pkg_dict)
         return pkg_dict
         
     # IAuthFunctions
