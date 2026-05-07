@@ -3,4 +3,4 @@ include LICENSE
 include requirements.txt
 recursive-include ckanext/datasetapproval *.html *.json *.js *.less *.css *.mo *.yml 
 recursive-include ckanext/datasetapproval/migration *.ini *.py *.mako
-recursive-include ckanext/datasetapproval *.yaml *.ini
+recursive-include ckanext/datasetapproval/tests *.yaml *.ini
