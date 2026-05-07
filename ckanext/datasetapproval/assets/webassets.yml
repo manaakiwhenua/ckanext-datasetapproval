@@ -27,3 +27,11 @@ package_form_helpers_js:
   extra:
     preload:
       - base/main
+
+field_visibility_helper_js:
+  output: ckanext-datasetapproval/%(version)s-field_visibility_helper.js
+  contents:
+    - js/field_visibility_helper.js
+  extra:
+    preload:
+      - base/main
