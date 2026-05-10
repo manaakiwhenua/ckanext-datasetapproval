@@ -76,7 +76,7 @@ def get_review_types_for_display(pkg_dict=None) -> list[ReviewRequest]:
     if not pkg_dict:
         return []
     
-    review_type_enum = VOCAB_ENUMS.review_type
+    review_type_enum = VOCAB_ENUMS.review_types
     additional_reviews_requested = []
     review_required_keys = [k for k in pkg_dict.keys() if k.endswith('_review_required') and pkg_dict.get(k) == True]
 
