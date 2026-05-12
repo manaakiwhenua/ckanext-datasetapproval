@@ -52,14 +52,13 @@ class EditView(BaseEditView):
         selected_org = tk.request.form.get("owner_org")
         context.update({'submit_review': tk.request.form.get("save") == "submit-review"})
         context.update({'admin_editing': h.is_admin(current_user.name, selected_org)})
+        context.update({'bypass_review': tk.request.form.get("save") == "bypass-review"})
         return context
 
     def post(self, package_type, id):
-        if tk.request.form.get("save") == "bypass-review":
+        context = self._prepare()
+        if context.get("bypass_review", False) == True:
             try:
-                context = self._prepare()
-                context.update({'bypass_review': True})
-
                 # retrieving pkg_dict before attempting package_patch which may throw further exceptions
                 pkg_dict = tk.get_action("package_show")(
                     {"ignore_auth": True},

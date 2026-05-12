@@ -6,7 +6,7 @@ import sqlalchemy as sa
 from sqlalchemy import MetaData, Table, inspect
 from sqlalchemy.orm import close_all_sessions
 from ckan.tests import factories
-import ckan.plugins.toolkit as tk
+import ckan.tests.helpers as test_helpers
 
 import logging
 from typing import Any, Dict, List, Tuple, Optional
@@ -120,7 +120,6 @@ def make_basic_data_dict():
             "private": "true",
             "publisher": "New Zealand Institute for Bioeconomy Science",
             "publication_year": "2026",
-            "publishing_status": "in_progress",
             "chosen_visibility": "false",
             "author":"Test Author",
             "author_email": "author@example.com",
@@ -136,44 +135,76 @@ def make_basic_data_dict():
     return _make_basic_data_dict
 
 @pytest.fixture()
-def org_with_editor():
-    user = factories.User()
-    users = [{"name": user["name"], "capacity": "editor"}]
-    organization = factories.Organization(users=users)
-
-    return organization, user
-
-
-@pytest.fixture()
-def org_with_admin():
-    user = factories.User()
-    users = [{"name": user["name"], "capacity": "admin"}]
-    organization = factories.Organization(users=users)
-
-    return organization, user
-
+def make_org_with_member():
+    def _make_org_with_member(user, capacity,):
+        org = factories.Organization(users=[
+            {"name": user["name"], "capacity": capacity}
+        ])
+        return org
+    return _make_org_with_member
 
 @pytest.fixture()
 # creates a basic dataset (with chosen visibility of "false"(public)) given whether user is an admin or editor
 def make_dataset(make_basic_data_dict):
-    def _make_dataset(org_id, user, submit_review=False, admin_editing=False, **overrides):
+    def _make_dataset(org_id, context, **overrides):
         
         data = make_basic_data_dict(org_id)
 
         data.update(overrides)
-        
 
-        # editor simply creating dataset, so not submitting for review
-        context = {
-            "user": user["name"],
-            "submit_review": submit_review,
-            "admin_editing": admin_editing,
-        }
-        logger.debug(f"data and context\ndata: {data}\ncontext: {context}")
-
-        return tk.get_action("package_create")(
-            context,
-            data
+        return test_helpers.call_action(
+            "package_create",
+            context=context,
+            **data
         )
 
     return _make_dataset
+
+
+@pytest.fixture()
+def make_context_for_editor_save():
+    def _make_context_for_editor_save(editor):
+        context = {
+            "user": editor["name"],
+            "submit_review": False,
+            "admin_editing": False,
+            "bypass_review": False,
+        }
+        return context
+    return _make_context_for_editor_save
+
+@pytest.fixture()
+def make_context_for_editor_submit():
+    def _make_context_for_editor_submit(editor):
+        context = {
+            "user": editor["name"],
+            "submit_review": True,
+            "admin_editing": False,
+            "bypass_review": False,
+        }
+        return context
+    return _make_context_for_editor_submit
+
+@pytest.fixture()
+def make_context_for_editor_bypass():
+    def _make_context_for_editor_bypass(editor):
+        context = {
+            "user": editor["name"],
+            "submit_review": True,
+            "admin_editing": False,
+            "bypass_review": True,
+        }
+        return context
+    return _make_context_for_editor_bypass
+
+@pytest.fixture()
+def make_context_for_admin_save():
+    def _make_context_for_admin_save(admin):
+        context = {
+            "user": admin["name"],
+            "submit_review": False,
+            "admin_editing": True,
+            "bypass_review": False,
+        }
+        return context
+    return _make_context_for_admin_save

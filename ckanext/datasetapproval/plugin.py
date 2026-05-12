@@ -57,45 +57,6 @@ class DatasetapprovalPlugin(plugins.SingletonPlugin,
         helper_functions.update(workflow_action_helpers.get_helpers())
         return helper_functions
 
-    def before_search(self, search_params):
-        include_in_review = search_params.get('include_in_review', False)
-
-        if include_in_review:
-            search_params.pop('include_in_review', None)
-
-        include_drafts = search_params.get('include_drafts', False)
-
-        if toolkit.c.userobj:
-            user_is_syadmin = toolkit.c.userobj.sysadmin
-        else:
-            user_is_syadmin = False
-            
-        if user_is_syadmin:
-            return search_params
-        elif include_in_review:
-            return search_params
-        elif include_drafts:
-            return search_params
-        else:   
-            search_params.update({
-                'fq': '!(publishing_status:(in_progress OR in_review OR rejected))' + search_params.get('fq', '')
-            })
-        return search_params
-
-    #IPermissionLabels
-    def get_user_dataset_labels(self, user_obj):
-        labels = super(DatasetapprovalPlugin, self) \
-            .get_user_dataset_labels(user_obj)
-
-        if user_obj and hasattr(user_obj, 'plugin_extras') and user_obj.plugin_extras:
-            if user_obj.plugin_extras.get('has_approval_permission', False):
-                labels = [x for x in labels if not x.startswith('member')]
-                orgs = toolkit.get_action(u'organization_list_for_user')(
-                    {u'user': user_obj.id}, {u'permission': u'admin'})
-                labels.extend(u'member-%s' % o['id'] for o in orgs)
-        return labels
-
-
     # IBlueprint
     def get_blueprint(self):
         full_blueprints = [views.dataset.registered_views(),  blueprints.approveBlueprint]

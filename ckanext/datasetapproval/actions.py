@@ -1,6 +1,4 @@
 import logging
-import ckan.authz as authz
-from ckanext.datasetapproval import models
 from ckanext.datasetapproval.models import WorkflowAction, ReviewComment, WorkflowHistoryEntry
 from ckan.lib.mailer import MailerException
 import ckan.plugins.toolkit as tk
@@ -8,25 +6,16 @@ import ckan.plugins as p
 import ckan.logic as logic
 from ckan.lib.helpers import helper_functions as h
 from .enums import ReviewType
+from flask import has_request_context
 
 from ckanext.datasetapproval.mailer import mail_package_review_request_to_admins 
 
 log = logging.getLogger(__name__)
 
-def is_user_editor_of_org(org_id, user_id):
-    capacity = authz.users_role_for_group_or_org(org_id, user_id)
-    return capacity == "editor"
-
 def publishing_check(context, data_dict):
     admin_editing = context.get("admin_editing", False)
     submit_review = context.get("submit_review", False)
     bypass_review = context.get("bypass_review", False)
-    user_id = (
-        tk.current_user.id
-        if tk.current_user and not tk.current_user.is_anonymous
-        else None
-    )
-    org_id = data_dict.get("owner_org")
 
     ## if the dataset being created/updated is currently under review the status will be either "approved" or "rejected"
     if data_dict.get("currently_reviewing"):
@@ -36,8 +25,8 @@ def publishing_check(context, data_dict):
     elif admin_editing:
         data_dict["publishing_status"] = "approved"
         data_dict["chosen_visibility"] = data_dict["private"]
-    ## if the dataset is being created/updated by an editor then status must be set to "in_review" unless they are saving as a draft or only changing visibility
-    elif is_user_editor_of_org(org_id, user_id):
+    ## if not admin editing or reviewing, then is editor creating/updating, need to check request
+    else:
         # need this check here still to ensure it stays approved
         if bypass_review == True:
             data_dict = set_visibility_on_approval_or_rejection(data_dict)
@@ -73,14 +62,16 @@ def _wrap_publish_review(up_func, context, data_dict, *, action_name):
     if context.get('send_request', False):
         try:
             mail_package_review_request_to_admins(context, data_dict)
-            tk.h.flash_success(
-                "Review request sent to collection admins. You will be notified by email of the review outcome."
-            )
+            if has_request_context():
+                tk.h.flash_success(
+                    "Review request sent to collection admins. You will be notified by email of the review outcome."
+                )
         except MailerException:
             log.exception("%s: mail send failed", action_name)
-            tk.h.flash_error(
-                "Unable to send review request to collection admins. Please contact the datastore administrator."
-            )
+            if has_request_context():
+                tk.h.flash_error(
+                    "Unable to send review request to collection admins. Please contact the datastore administrator."
+                )
     return result
 
 @tk.side_effect_free
